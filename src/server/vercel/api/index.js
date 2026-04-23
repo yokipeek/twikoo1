@@ -49,7 +49,7 @@ const {
 } = require('twikoo-func/utils/import')
 const { postCheckSpam } = require('twikoo-func/utils/spam')
 const { sendNotice, emailTest } = require('twikoo-func/utils/notify')
-const { uploadImage } = require('twikoo-func/utils/image')
+const { uploadImage } = require('./utils/image')
 const logger = require('twikoo-func/utils/logger')
 
 const $ = getCheerio()

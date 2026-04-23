@@ -7,13 +7,14 @@
   "main": "api/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/twikoojs/twikoo.git"
+    "url": "https://github.com/yokipeek/twikoo1.git"
   },
   "homepage": "https://twikoo.js.org",
   "dependencies": {
+    "form-data": "^4.0.0",
     "get-user-ip": "^1.0.1",
     "mongodb": "^6.3.0",
-    "twikoo-func": "file:../function/twikoo",
+    "twikoo-func": "1.7.7",
     "uuid": "^8.3.2"
   }
 }
