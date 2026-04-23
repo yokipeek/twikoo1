@@ -1,2 +1,1 @@
-const { uploadImage } = require('./utils/image')
-module.exports = { uploadImage }
+module.exports = require('twikoo-vercel')

@@ -11,7 +11,6 @@
   },
   "homepage": "https://twikoo.js.org",
   "dependencies": {
-    "form-data": "^4.0.0",
     "get-user-ip": "^1.0.1",
     "mongodb": "^6.3.0",
     "twikoo-func": "1.7.7",

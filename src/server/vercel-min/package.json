@@ -1,6 +1,1 @@
-{
-  "dependencies": {
-    "form-data": "^4.0.0",
-    "twikoo-vercel": "file:../vercel"
-  }
-}
+{ "dependencies": { "twikoo-vercel": "latest" } }
