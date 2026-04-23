@@ -16,7 +16,7 @@ const {
   getMd5,
   getSha256,
   getXml2js
-} = require('twikoo-func/utils/lib')
+} = require('twikoo-func-yokipeek/utils/lib')
 const {
   getFuncVersion,
   getUrlQuery,
@@ -38,7 +38,7 @@ const {
   getConfig,
   getConfigForAdmin,
   validate
-} = require('twikoo-func/utils')
+} = require('twikoo-func-yokipeek/utils')
 const {
   jsonParse,
   commentImportValine,
@@ -46,11 +46,11 @@ const {
   commentImportArtalk,
   commentImportArtalk2,
   commentImportTwikoo
-} = require('twikoo-func/utils/import')
-const { postCheckSpam } = require('twikoo-func/utils/spam')
-const { sendNotice, emailTest } = require('twikoo-func/utils/notify')
-const { uploadImage } = require('twikoo-func/utils/image')
-const logger = require('twikoo-func/utils/logger')
+} = require('twikoo-func-yokipeek/utils/import')
+const { postCheckSpam } = require('twikoo-func-yokipeek/utils/spam')
+const { sendNotice, emailTest } = require('twikoo-func-yokipeek/utils/notify')
+const { uploadImage } = require('twikoo-func-yokipeek/utils/image')
+const logger = require('twikoo-func-yokipeek/utils/logger')
 
 const $ = getCheerio()
 const axios = getAxios()
@@ -60,7 +60,7 @@ const sha256 = getSha256()
 const xml2js = getXml2js()
 
 // 常量 / constants
-const { RES_CODE, MAX_REQUEST_TIMES } = require('twikoo-func/utils/constants')
+const { RES_CODE, MAX_REQUEST_TIMES } = require('twikoo-func-yokipeek/utils/constants')
 
 // 全局变量 / variables
 let db = null
