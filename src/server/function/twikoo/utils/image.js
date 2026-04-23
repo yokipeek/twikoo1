@@ -45,7 +45,7 @@ const fn = {
         await fn.uploadImageToEasyImage({ photo, fileName, config, res })
       } else if (imageService === 'chevereto') {
         await fn.uploadImageToChevereto({ photo, fileName, config, res })
-      } else if (imageService === 'cloudflare-imgbed') {
+      } else if (imageService === 'cfimgbed') {
         await fn.uploadImageToCloudflareImgBed({ photo, fileName, config, res })
       } else if (imageService === 's3') {
         await fn.uploadImageToS3({ photo, fileName, config, res })
