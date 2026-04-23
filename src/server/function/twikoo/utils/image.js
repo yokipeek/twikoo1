@@ -315,7 +315,7 @@ const fn = {
     res.data = { url: fileUrl }
   },
   async uploadImageToCloudflareImgBed ({ photo, fileName, config, res }) {
-    // Cloudflare ImgBed 图床 https://github.com/MarSeventh/cfimgbed
+    // Cloudflare ImgBed 图床 https://github.com/MarSeventh/cloudflare-imgbed
     if (!config.IMAGE_CDN_URL) {
       throw new Error('未配置 Cloudflare ImgBed 的 API 地址 (IMAGE_CDN_URL)')
     }
