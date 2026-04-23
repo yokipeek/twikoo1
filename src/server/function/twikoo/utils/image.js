@@ -331,6 +331,11 @@ const fn = {
     let authCode = config.IMAGE_CDN_TOKEN
     let uploadChannel = 'telegram'
     let useBearerAuth = false
+    let uploadNameType = 'origin'
+    let channelName = ''
+    let serverCompress = true
+    let autoRetry = true
+    let uploadFolder = ''
 
     try {
       const parsed = JSON.parse(config.IMAGE_CDN_TOKEN)
@@ -339,12 +344,22 @@ const fn = {
       if (parsed.apiKey) authCode = parsed.apiKey
       if (parsed.uploadChannel) uploadChannel = parsed.uploadChannel
       if (parsed.useBearerAuth) useBearerAuth = true
+      if (parsed.uploadNameType) uploadNameType = parsed.uploadNameType
+      if (parsed.channelName) channelName = parsed.channelName
+      if (typeof parsed.serverCompress === 'boolean') serverCompress = parsed.serverCompress
+      if (typeof parsed.autoRetry === 'boolean') autoRetry = parsed.autoRetry
+      if (parsed.uploadFolder) uploadFolder = parsed.uploadFolder
     } catch (e) {
       // TOKEN 不是 JSON 时直接作为 authCode 使用
     }
 
     params.append('uploadChannel', uploadChannel)
     params.append('returnFormat', 'full')
+    params.append('uploadNameType', uploadNameType)
+    params.append('serverCompress', String(serverCompress))
+    params.append('autoRetry', String(autoRetry))
+    if (channelName) params.append('channelName', channelName)
+    if (uploadFolder) params.append('uploadFolder', uploadFolder)
 
     const formData = new FormData()
     formData.append('file', fn.base64UrlToReadStream(photo, fileName))
