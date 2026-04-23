@@ -344,6 +344,7 @@ const fn = {
     }
 
     params.append('uploadChannel', uploadChannel)
+    params.append('returnFormat', 'full')
 
     const formData = new FormData()
     formData.append('file', fn.base64UrlToReadStream(photo, fileName))
