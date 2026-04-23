@@ -320,56 +320,54 @@ const fn = {
     if (!config.IMAGE_CDN_URL) {
       throw new Error('未配置 Cloudflare ImgBed 的 API 地址 (IMAGE_CDN_URL)')
     }
+    if (!config.IMAGE_CDN_TOKEN) {
+      throw new Error('未配置 Cloudflare ImgBed 的 Bearer Token (IMAGE_CDN_TOKEN)')
+    }
+
     const formData = new FormData()
     formData.append('file', fn.base64UrlToReadStream(photo, fileName))
 
-    // 从 IMAGE_CDN_URL 中获取上传地址和参数
-    let uploadUrl = config.IMAGE_CDN_URL.replace(/\/$/, '')
-    
-    // 如果URL中没有uploadChannel参数，从配置中查找
-    const urlObj = new URL(uploadUrl)
-    if (!urlObj.searchParams.has('uploadChannel') && config.IMAGE_CDN_TOKEN) {
-      // 尝试解析TOKEN中的JSON配置
-      try {
-        const cfConfig = JSON.parse(config.IMAGE_CDN_TOKEN)
-        if (cfConfig.uploadChannel) {
-          urlObj.searchParams.append('uploadChannel', cfConfig.uploadChannel)
-        }
-      } catch (e) {
-        // 如果不是JSON，保持原样
+    const baseUrl = config.IMAGE_CDN_URL.replace(/\/$/, '')
+    const params = new URLSearchParams()
+
+    let uploadChannel
+    let bearerToken = config.IMAGE_CDN_TOKEN
+    try {
+      const cfConfig = JSON.parse(config.IMAGE_CDN_TOKEN)
+      uploadChannel = cfConfig.uploadChannel
+      bearerToken = cfConfig.token || cfConfig.apiKey || ''
+      if (!bearerToken) {
+        throw new Error('JSON 配置中未找到 token 或 apiKey 字段')
       }
+    } catch (e) {
+      if (e.message.includes('未找到')) throw e
+      // TOKEN 不是 JSON 时直接作为 Bearer Token 使用
     }
 
-    // 使用Bearer Token认证
-    const token = config.IMAGE_CDN_TOKEN || ''
-    
-    const response = await fetch(urlObj.toString(), {
-      method: 'POST',
+    if (!bearerToken) {
+      throw new Error('未配置有效的 Bearer Token')
+    }
+
+    if (uploadChannel) {
+      params.append('uploadChannel', uploadChannel)
+    }
+
+    const url = params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl
+
+    const uploadResult = await axios.post(url, formData, {
       headers: {
-        Authorization: 'Bearer ' + token
-      },
-      body: formData
+        ...formData.getHeaders(),
+        Authorization: `Bearer ${bearerToken}`
+      }
     })
 
-    const data = await response.json()
-
-    // 处理响应格式: [{ "src": "/file/id" }]
+    const data = uploadResult.data
     if (data && data[0] && data[0].src) {
-      let srcPath = data[0].src
-      const cdnUrl = urlObj.origin
-      // 如果返回的是完整URL，直接使用
-      if (srcPath.startsWith('http')) {
-        res.data = {
-          url: srcPath,
-          thumb: srcPath,
-          del: ''
-        }
-      } else {
-        res.data = {
-          url: cdnUrl + srcPath,
-          thumb: cdnUrl + srcPath,
-          del: ''
-        }
+      const srcPath = data[0].src
+      res.data = {
+        url: srcPath.startsWith('http') ? srcPath : `${baseUrl}${srcPath}`,
+        thumb: srcPath.startsWith('http') ? srcPath : `${baseUrl}${srcPath}`,
+        del: ''
       }
     } else {
       throw new Error('Cloudflare ImgBed 上传失败: ' + JSON.stringify(data))
