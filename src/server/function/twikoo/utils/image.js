@@ -321,52 +321,24 @@ const fn = {
     if (!config.IMAGE_CDN_URL) {
       throw new Error('未配置 Cloudflare ImgBed 的 API 地址 (IMAGE_CDN_URL)')
     }
+    if (!config.IMAGE_CDN_TOKEN) {
+      throw new Error('未配置 Cloudflare ImgBed 的 authCode (IMAGE_CDN_TOKEN)')
+    }
 
     const baseUrl = config.IMAGE_CDN_URL.replace(/\/$/, '')
     const params = new URLSearchParams()
+    params.append('authCode', config.IMAGE_CDN_TOKEN)
 
-    let authCode = config.IMAGE_CDN_TOKEN || ''
-    const cfConfig = {
-      uploadChannel: 'telegram',
-      channelName: '',
-      serverCompress: true,
-      autoRetry: true,
-      uploadNameType: 'default',
-      returnFormat: 'full',
-      uploadFolder: ''
-    }
-
+    let uploadChannel = 'telegram'
     try {
-      const tokenStr = config.IMAGE_CDN_TOKEN
-      if (!tokenStr) throw new Error('IMAGE_CDN_TOKEN is empty')
-      const parsed = JSON.parse(tokenStr)
-      if (parsed.authCode) authCode = parsed.authCode
-      if (parsed.token) authCode = parsed.token
-      if (parsed.apiKey) authCode = parsed.apiKey
-      if (parsed.uploadChannel) cfConfig.uploadChannel = parsed.uploadChannel
-      if (parsed.channelName) cfConfig.channelName = parsed.channelName
-      if (typeof parsed.serverCompress === 'boolean') cfConfig.serverCompress = parsed.serverCompress
-      if (typeof parsed.autoRetry === 'boolean') cfConfig.autoRetry = parsed.autoRetry
-      if (parsed.uploadNameType) cfConfig.uploadNameType = parsed.uploadNameType
-      if (parsed.returnFormat) cfConfig.returnFormat = parsed.returnFormat
-      if (parsed.uploadFolder) cfConfig.uploadFolder = parsed.uploadFolder
+      const parsed = JSON.parse(config.IMAGE_CDN_TOKEN)
+      if (parsed.authCode) params.set('authCode', parsed.authCode)
+      if (parsed.uploadChannel) uploadChannel = parsed.uploadChannel
     } catch (e) {
-      if (e.message === 'IMAGE_CDN_TOKEN is empty') throw e
       // TOKEN 不是 JSON 时直接作为 authCode 使用
     }
 
-    if (!authCode) {
-      throw new Error('未配置 Cloudflare ImgBed 的 authCode')
-    }
-
-    params.append('authCode', authCode)
-    params.append('uploadChannel', cfConfig.uploadChannel)
-    if (cfConfig.channelName) params.append('channelName', cfConfig.channelName)
-    params.append('serverCompress', String(cfConfig.serverCompress))
-    params.append('autoRetry', String(cfConfig.autoRetry))
-    params.append('uploadNameType', cfConfig.uploadNameType)
-    params.append('returnFormat', cfConfig.returnFormat)
-    if (cfConfig.uploadFolder) params.append('uploadFolder', cfConfig.uploadFolder)
+    params.append('uploadChannel', uploadChannel)
 
     const formData = new FormData()
     formData.append('file', fn.base64UrlToReadStream(photo, fileName))
@@ -383,18 +355,6 @@ const fn = {
         url: data[0].src,
         thumb: data[0].src,
         del: ''
-      }
-    } else if (data && data.src) {
-      res.data = {
-        url: data.src,
-        thumb: data.src,
-        del: data.delete_url || ''
-      }
-    } else if (data && data.url) {
-      res.data = {
-        url: data.url,
-        thumb: data.thumb || data.url,
-        del: data.del || ''
       }
     } else {
       throw new Error('Cloudflare ImgBed 上传失败: ' + JSON.stringify(data))

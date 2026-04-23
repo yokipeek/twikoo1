@@ -436,7 +436,7 @@ export default {
             const canvas = document.createElement('canvas')
             let width = img.width
             let height = img.height
-            const maxSize = 1920
+            const maxSize = 800
             if (width > maxSize || height > maxSize) {
               if (width > height) {
                 height = (height * maxSize) / width
