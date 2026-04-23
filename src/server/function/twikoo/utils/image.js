@@ -8,6 +8,7 @@ const axios = getAxios()
 const FormData = getFormData()
 const logger = require('./logger')
 
+// cfimgbed support
 const fn = {
   async uploadImage (event, config) {
     const { photo, fileName } = event
