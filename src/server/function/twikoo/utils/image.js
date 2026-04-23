@@ -322,18 +322,23 @@ const fn = {
       throw new Error('未配置 Cloudflare ImgBed 的 API 地址 (IMAGE_CDN_URL)')
     }
     if (!config.IMAGE_CDN_TOKEN) {
-      throw new Error('未配置 Cloudflare ImgBed 的 authCode (IMAGE_CDN_TOKEN)')
+      throw new Error('未配置 Cloudflare ImgBed 的 Token (IMAGE_CDN_TOKEN)')
     }
 
     const baseUrl = config.IMAGE_CDN_URL.replace(/\/$/, '')
     const params = new URLSearchParams()
-    params.append('authCode', config.IMAGE_CDN_TOKEN)
 
+    let authCode = config.IMAGE_CDN_TOKEN
     let uploadChannel = 'telegram'
+    let useBearerAuth = false
+
     try {
       const parsed = JSON.parse(config.IMAGE_CDN_TOKEN)
-      if (parsed.authCode) params.set('authCode', parsed.authCode)
+      if (parsed.authCode) authCode = parsed.authCode
+      if (parsed.token) authCode = parsed.token
+      if (parsed.apiKey) authCode = parsed.apiKey
       if (parsed.uploadChannel) uploadChannel = parsed.uploadChannel
+      if (parsed.useBearerAuth) useBearerAuth = true
     } catch (e) {
       // TOKEN 不是 JSON 时直接作为 authCode 使用
     }
@@ -345,9 +350,21 @@ const fn = {
 
     const url = `${baseUrl}/upload?${params.toString()}`
 
-    const uploadResult = await axios.post(url, formData, {
-      headers: formData.getHeaders()
-    })
+    let uploadResult
+    if (useBearerAuth) {
+      uploadResult = await axios.post(url, formData, {
+        headers: {
+          ...formData.getHeaders(),
+          Authorization: `Bearer ${authCode}`
+        }
+      })
+    } else {
+      params.append('authCode', authCode)
+      const finalUrl = `${baseUrl}/upload?${params.toString()}`
+      uploadResult = await axios.post(finalUrl, formData, {
+        headers: formData.getHeaders()
+      })
+    }
 
     const data = uploadResult.data
     if (data && data[0] && data[0].src) {
