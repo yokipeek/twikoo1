@@ -45,10 +45,10 @@ const fn = {
         await fn.uploadImageToEasyImage({ photo, fileName, config, res })
       } else if (imageService === 'chevereto') {
         await fn.uploadImageToChevereto({ photo, fileName, config, res })
-      } else if (imageService === 's3') {
-        await fn.uploadImageToS3({ photo, fileName, config, res })
       } else if (imageService === 'cloudflare-imgbed') {
         await fn.uploadImageToCloudflareImgBed({ photo, fileName, config, res })
+      } else if (imageService === 's3') {
+        await fn.uploadImageToS3({ photo, fileName, config, res })
       } else {
         throw new Error('不支持的图片上传服务')
       }
@@ -314,51 +314,50 @@ const fn = {
     }
     res.data = { url: fileUrl }
   },
-  base64UrlToReadStream (base64Url, fileName) {
-    const base64 = base64Url.split(';base64,').pop()
-    const writePath = path.resolve(os.tmpdir(), fileName)
-    fs.writeFileSync(writePath, base64, { encoding: 'base64' })
-    return fs.createReadStream(writePath)
-  },
   async uploadImageToCloudflareImgBed ({ photo, fileName, config, res }) {
     // Cloudflare ImgBed 图床 https://github.com/MarSeventh/CloudFlare-ImgBed
     if (!config.IMAGE_CDN_URL) {
       throw new Error('未配置 Cloudflare ImgBed 的 API 地址 (IMAGE_CDN_URL)')
     }
-    // IMAGE_CDN_TOKEN 作为 authCode 使用（如果需要）
     const formData = new FormData()
     formData.append('file', fn.base64UrlToReadStream(photo, fileName))
-    
+
     // 构建查询参数
     const params = new URLSearchParams()
+
+    // IMAGE_CDN_TOKEN 专用作 authCode/API Token
     if (config.IMAGE_CDN_TOKEN) {
       params.append('authCode', config.IMAGE_CDN_TOKEN)
     }
-    // 添加可选参数（可以通过环境变量传递）
-    if (process.env.TWIKOO_CF_IMGBED_CHANNEL) {
-      params.append('uploadChannel', process.env.TWIKOO_CF_IMGBED_CHANNEL)
-    }
-    if (process.env.TWIKOO_CF_IMGBED_CHANNEL_NAME) {
-      params.append('channelName', process.env.TWIKOO_CF_IMGBED_CHANNEL_NAME)
-    }
-    
-    const url = `${config.IMAGE_CDN_URL.replace(/\/$/, '')}/upload?${params.toString()}`
+
+    // 从 IMAGE_CDN_URL 中解析额外参数（如: https://img.weiguang.eu.org?uploadChannel=telegram&channelName=mychannel）
+    const urlObj = new URL(config.IMAGE_CDN_URL.replace(/\/$/, ''))
+    urlObj.searchParams.forEach((value, key) => {
+      params.append(key, value)
+    })
+
+    const url = `${urlObj.origin}${urlObj.pathname}?${params.toString()}`
     const uploadResult = await axios.post(url, formData)
-    
+
     // 处理响应格式: [{ "src": "/file/id" }]
     const data = uploadResult.data
     if (Array.isArray(data) && data.length > 0 && data[0].src) {
-      // 拼接完整URL
       const srcPath = data[0].src
-      const cdnUrl = config.IMAGE_CDN_URL.replace(/\/$/, '')
+      const cdnUrl = urlObj.origin
       res.data = {
         url: cdnUrl + srcPath,
-        thumb: cdnUrl + srcPath, // 可选返回缩略图URL
-        del: '' // Cloudflare ImgBed 可能在Delete API中提供删除链接
+        thumb: cdnUrl + srcPath,
+        del: ''
       }
     } else {
       throw new Error('Cloudflare ImgBed 上传失败: ' + JSON.stringify(data))
     }
+  },
+  base64UrlToReadStream (base64Url, fileName) {
+    const base64 = base64Url.split(';base64,').pop()
+    const writePath = path.resolve(os.tmpdir(), fileName)
+    fs.writeFileSync(writePath, base64, { encoding: 'base64' })
+    return fs.createReadStream(writePath)
   }
 }
 
