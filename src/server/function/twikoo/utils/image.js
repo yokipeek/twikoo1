@@ -325,15 +325,66 @@ const fn = {
     // 构建查询参数
     const params = new URLSearchParams()
 
-    // IMAGE_CDN_TOKEN 专用作 authCode/API Token
+    // 解析 IMAGE_CDN_TOKEN 配置
+    // 支持两种格式：
+    // 1. 普通字符串：直接作为 authCode
+    // 2. JSON格式：{"authCode":"xxx","uploadChannel":"telegram","channelName":"xxx"}
+    let cfConfig = { authCode: '' }
     if (config.IMAGE_CDN_TOKEN) {
-      params.append('authCode', config.IMAGE_CDN_TOKEN)
+      try {
+        cfConfig = JSON.parse(config.IMAGE_CDN_TOKEN)
+      } catch (e) {
+        // 如果不是JSON，则作为 authCode
+        cfConfig = { authCode: config.IMAGE_CDN_TOKEN }
+      }
     }
 
-    // 从 IMAGE_CDN_URL 中解析额外参数（如: https://img.weiguang.eu.org?uploadChannel=telegram&channelName=mychannel）
+    // authCode / API Token
+    if (cfConfig.authCode) {
+      params.append('authCode', cfConfig.authCode)
+    }
+
+    // uploadChannel (上传渠道: telegram, cfr2, s3, discord, huggingface)
+    if (cfConfig.uploadChannel) {
+      params.append('uploadChannel', cfConfig.uploadChannel)
+    }
+
+    // channelName (特定渠道名称)
+    if (cfConfig.channelName) {
+      params.append('channelName', cfConfig.channelName)
+    }
+
+    // uploadNameType (文件命名方式)
+    if (cfConfig.uploadNameType) {
+      params.append('uploadNameType', cfConfig.uploadNameType)
+    }
+
+    // returnFormat (返回格式)
+    if (cfConfig.returnFormat) {
+      params.append('returnFormat', cfConfig.returnFormat)
+    }
+
+    // uploadFolder (上传目录)
+    if (cfConfig.uploadFolder) {
+      params.append('uploadFolder', cfConfig.uploadFolder)
+    }
+
+    // serverCompress (服务器端压缩)
+    if (cfConfig.serverCompress !== undefined) {
+      params.append('serverCompress', cfConfig.serverCompress)
+    }
+
+    // autoRetry (自动重试)
+    if (cfConfig.autoRetry !== undefined) {
+      params.append('autoRetry', cfConfig.autoRetry)
+    }
+
+    // 从 IMAGE_CDN_URL 中解析额外参数（作为补充）
     const urlObj = new URL(config.IMAGE_CDN_URL.replace(/\/$/, ''))
     urlObj.searchParams.forEach((value, key) => {
-      params.append(key, value)
+      if (!params.has(key)) {
+        params.append(key, value)
+      }
     })
 
     const url = `${urlObj.origin}${urlObj.pathname}?${params.toString()}`
@@ -342,12 +393,21 @@ const fn = {
     // 处理响应格式: [{ "src": "/file/id" }]
     const data = uploadResult.data
     if (Array.isArray(data) && data.length > 0 && data[0].src) {
-      const srcPath = data[0].src
+      let srcPath = data[0].src
       const cdnUrl = urlObj.origin
-      res.data = {
-        url: cdnUrl + srcPath,
-        thumb: cdnUrl + srcPath,
-        del: ''
+      // 如果返回的是完整URL，直接使用
+      if (srcPath.startsWith('http')) {
+        res.data = {
+          url: srcPath,
+          thumb: srcPath,
+          del: ''
+        }
+      } else {
+        res.data = {
+          url: cdnUrl + srcPath,
+          thumb: cdnUrl + srcPath,
+          del: ''
+        }
       }
     } else {
       throw new Error('Cloudflare ImgBed 上传失败: ' + JSON.stringify(data))
