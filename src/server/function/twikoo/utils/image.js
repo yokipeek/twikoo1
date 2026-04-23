@@ -384,6 +384,18 @@ const fn = {
         thumb: data[0].src,
         del: ''
       }
+    } else if (data && data.src) {
+      res.data = {
+        url: data.src,
+        thumb: data.src,
+        del: data.delete_url || ''
+      }
+    } else if (data && data.url) {
+      res.data = {
+        url: data.url,
+        thumb: data.thumb || data.url,
+        del: data.del || ''
+      }
     } else {
       throw new Error('Cloudflare ImgBed 上传失败: ' + JSON.stringify(data))
     }
