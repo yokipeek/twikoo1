@@ -88,11 +88,12 @@ export default {
                 { value: 'piclist', label: 'piclist' },
                 { value: 'easyimage', label: 'easyimage' },
                 { value: 'chevereto', label: 'chevereto' },
+                { value: 'cfimgbed', label: 'cfimgbed' },
                 { value: 's3', label: 'S3 / R2 / MinIO' }
               ],
               value: ''
             },
-            { key: 'IMAGE_CDN_URL', desc: t('ADMIN_CONFIG_ITEM_IMAGE_CDN_URL'), ph: `${t('ADMIN_CONFIG_EXAMPLE')}https://piclist.example.com`, value: '', showIf: (s) => ['lskypro', 'piclist', 'easyimage'].includes(s('IMAGE_CDN')) },
+            { key: 'IMAGE_CDN_URL', desc: t('ADMIN_CONFIG_ITEM_IMAGE_CDN_URL'), ph: `${t('ADMIN_CONFIG_EXAMPLE')}https://piclist.example.com`, value: '', showIf: (s) => ['lskypro', 'piclist', 'easyimage', 'cfimgbed'].includes(s('IMAGE_CDN')) },
             { key: 'IMAGE_CDN_TOKEN', desc: t('ADMIN_CONFIG_ITEM_IMAGE_CDN_TOKEN'), ph: `${t('ADMIN_CONFIG_EXAMPLE')}example`, value: '', showIf: (s) => s('IMAGE_CDN') && s('IMAGE_CDN') !== 's3' },
             { key: 'S3_REGION', desc: t('ADMIN_CONFIG_ITEM_S3_REGION'), ph: `${t('ADMIN_CONFIG_EXAMPLE')}us-east-1`, value: '', showIf: (s) => s('IMAGE_CDN') === 's3' },
             { key: 'S3_BUCKET', desc: t('ADMIN_CONFIG_ITEM_S3_BUCKET'), ph: `${t('ADMIN_CONFIG_EXAMPLE')}my-bucket`, value: '', showIf: (s) => s('IMAGE_CDN') === 's3' },
