@@ -323,77 +323,38 @@ const fn = {
     const formData = new FormData()
     formData.append('file', fn.base64UrlToReadStream(photo, fileName))
 
-    // 构建查询参数
-    const params = new URLSearchParams()
-
-    // 解析 IMAGE_CDN_TOKEN 配置
-    // 支持两种格式：
-    // 1. 普通字符串：直接作为 authCode
-    // 2. JSON格式：{"authCode":"xxx","uploadChannel":"telegram","channelName":"xxx"}
-    let cfConfig = { authCode: '' }
-    if (config.IMAGE_CDN_TOKEN) {
+    // 从 IMAGE_CDN_URL 中获取上传地址和参数
+    let uploadUrl = config.IMAGE_CDN_URL.replace(/\/$/, '')
+    
+    // 如果URL中没有uploadChannel参数，从配置中查找
+    const urlObj = new URL(uploadUrl)
+    if (!urlObj.searchParams.has('uploadChannel') && config.IMAGE_CDN_TOKEN) {
+      // 尝试解析TOKEN中的JSON配置
       try {
-        cfConfig = JSON.parse(config.IMAGE_CDN_TOKEN)
+        const cfConfig = JSON.parse(config.IMAGE_CDN_TOKEN)
+        if (cfConfig.uploadChannel) {
+          urlObj.searchParams.append('uploadChannel', cfConfig.uploadChannel)
+        }
       } catch (e) {
-        // 如果不是JSON，则作为 authCode
-        cfConfig = { authCode: config.IMAGE_CDN_TOKEN }
+        // 如果不是JSON，保持原样
       }
     }
 
-    // authCode / API Token
-    if (cfConfig.authCode) {
-      params.append('authCode', cfConfig.authCode)
-    }
-
-    // uploadChannel (上传渠道: telegram, cfr2, s3, discord, huggingface)
-    if (cfConfig.uploadChannel) {
-      params.append('uploadChannel', cfConfig.uploadChannel)
-    }
-
-    // channelName (特定渠道名称)
-    if (cfConfig.channelName) {
-      params.append('channelName', cfConfig.channelName)
-    }
-
-    // uploadNameType (文件命名方式)
-    if (cfConfig.uploadNameType) {
-      params.append('uploadNameType', cfConfig.uploadNameType)
-    }
-
-    // returnFormat (返回格式)
-    if (cfConfig.returnFormat) {
-      params.append('returnFormat', cfConfig.returnFormat)
-    }
-
-    // uploadFolder (上传目录)
-    if (cfConfig.uploadFolder) {
-      params.append('uploadFolder', cfConfig.uploadFolder)
-    }
-
-    // serverCompress (服务器端压缩)
-    if (cfConfig.serverCompress !== undefined) {
-      params.append('serverCompress', cfConfig.serverCompress)
-    }
-
-    // autoRetry (自动重试)
-    if (cfConfig.autoRetry !== undefined) {
-      params.append('autoRetry', cfConfig.autoRetry)
-    }
-
-    // 从 IMAGE_CDN_URL 中解析额外参数（作为补充）
-    const urlObj = new URL(config.IMAGE_CDN_URL.replace(/\/$/, ''))
-    urlObj.searchParams.forEach((value, key) => {
-      if (!params.has(key)) {
-        params.append(key, value)
-      }
+    // 使用Bearer Token认证
+    const token = config.IMAGE_CDN_TOKEN || ''
+    
+    const response = await fetch(urlObj.toString(), {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + token
+      },
+      body: formData
     })
 
-    const url = `${urlObj.origin}${urlObj.pathname}?${params.toString()}`
-    const uploadResult = await axios.post(url, formData)
+    const data = await response.json()
 
     // 处理响应格式: [{ "src": "/file/id" }]
-    const data = uploadResult.data
-    if (Array.isArray(data) && data.length > 0 && data[0].src) {
+    if (data && data[0] && data[0].src) {
       let srcPath = data[0].src
       const cdnUrl = urlObj.origin
       // 如果返回的是完整URL，直接使用
