@@ -317,56 +317,71 @@ const fn = {
   },
   async uploadImageToCloudflareImgBed ({ photo, fileName, config, res }) {
     // Cloudflare ImgBed 图床 https://github.com/MarSeventh/CloudFlare-ImgBed
+    // API 文档: https://cfbed.sanyue.de/api/upload.html
     if (!config.IMAGE_CDN_URL) {
       throw new Error('未配置 Cloudflare ImgBed 的 API 地址 (IMAGE_CDN_URL)')
     }
-    if (!config.IMAGE_CDN_TOKEN) {
-      throw new Error('未配置 Cloudflare ImgBed 的 Bearer Token (IMAGE_CDN_TOKEN)')
-    }
-
-    const formData = new FormData()
-    formData.append('file', fn.base64UrlToReadStream(photo, fileName))
 
     const baseUrl = config.IMAGE_CDN_URL.replace(/\/$/, '')
     const params = new URLSearchParams()
 
-    let uploadChannel
-    let bearerToken = config.IMAGE_CDN_TOKEN
+    let authCode = config.IMAGE_CDN_TOKEN || ''
+    const cfConfig = {
+      uploadChannel: 'telegram',
+      channelName: '',
+      serverCompress: true,
+      autoRetry: true,
+      uploadNameType: 'default',
+      returnFormat: 'full',
+      uploadFolder: ''
+    }
+
     try {
-      const cfConfig = JSON.parse(config.IMAGE_CDN_TOKEN)
-      uploadChannel = cfConfig.uploadChannel
-      bearerToken = cfConfig.token || cfConfig.apiKey || ''
-      if (!bearerToken) {
-        throw new Error('JSON 配置中未找到 token 或 apiKey 字段')
-      }
+      const tokenStr = config.IMAGE_CDN_TOKEN
+      if (!tokenStr) throw new Error('IMAGE_CDN_TOKEN is empty')
+      const parsed = JSON.parse(tokenStr)
+      if (parsed.authCode) authCode = parsed.authCode
+      if (parsed.token) authCode = parsed.token
+      if (parsed.apiKey) authCode = parsed.apiKey
+      if (parsed.uploadChannel) cfConfig.uploadChannel = parsed.uploadChannel
+      if (parsed.channelName) cfConfig.channelName = parsed.channelName
+      if (typeof parsed.serverCompress === 'boolean') cfConfig.serverCompress = parsed.serverCompress
+      if (typeof parsed.autoRetry === 'boolean') cfConfig.autoRetry = parsed.autoRetry
+      if (parsed.uploadNameType) cfConfig.uploadNameType = parsed.uploadNameType
+      if (parsed.returnFormat) cfConfig.returnFormat = parsed.returnFormat
+      if (parsed.uploadFolder) cfConfig.uploadFolder = parsed.uploadFolder
     } catch (e) {
-      if (e.message.includes('未找到')) throw e
-      // TOKEN 不是 JSON 时直接作为 Bearer Token 使用
+      if (e.message === 'IMAGE_CDN_TOKEN is empty') throw e
+      // TOKEN 不是 JSON 时直接作为 authCode 使用
     }
 
-    if (!bearerToken) {
-      throw new Error('未配置有效的 Bearer Token')
+    if (!authCode) {
+      throw new Error('未配置 Cloudflare ImgBed 的 authCode')
     }
 
-    if (uploadChannel) {
-      params.append('uploadChannel', uploadChannel)
-    }
+    params.append('authCode', authCode)
+    params.append('uploadChannel', cfConfig.uploadChannel)
+    if (cfConfig.channelName) params.append('channelName', cfConfig.channelName)
+    params.append('serverCompress', String(cfConfig.serverCompress))
+    params.append('autoRetry', String(cfConfig.autoRetry))
+    params.append('uploadNameType', cfConfig.uploadNameType)
+    params.append('returnFormat', cfConfig.returnFormat)
+    if (cfConfig.uploadFolder) params.append('uploadFolder', cfConfig.uploadFolder)
 
-    const url = params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl
+    const formData = new FormData()
+    formData.append('file', fn.base64UrlToReadStream(photo, fileName))
+
+    const url = `${baseUrl}/upload?${params.toString()}`
 
     const uploadResult = await axios.post(url, formData, {
-      headers: {
-        ...formData.getHeaders(),
-        Authorization: `Bearer ${bearerToken}`
-      }
+      headers: formData.getHeaders()
     })
 
     const data = uploadResult.data
     if (data && data[0] && data[0].src) {
-      const srcPath = data[0].src
       res.data = {
-        url: srcPath.startsWith('http') ? srcPath : `${baseUrl}${srcPath}`,
-        thumb: srcPath.startsWith('http') ? srcPath : `${baseUrl}${srcPath}`,
+        url: data[0].src,
+        thumb: data[0].src,
         del: ''
       }
     } else {
