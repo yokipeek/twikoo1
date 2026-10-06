@@ -6,7 +6,6 @@
   "devCommand": "pnpm --filter=twikoo-vercel run dev",
   "functions": {
     "api/index.js": {
-      "runtime": "nodejs20.x",
       "maxDuration": 30
     }
   },
