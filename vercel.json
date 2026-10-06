@@ -1,17 +1,6 @@
 {
   "buildCommand": "pnpm install --frozen-lockfile && pnpm --filter=twikoo-vercel run build",
-  "framework": null,
   "installCommand": "pnpm install --frozen-lockfile",
   "devCommand": "pnpm --filter=twikoo-vercel run dev",
-  "functions": {
-    "packages/server-vercel/dist/index.js": {
-      "runtime": "nodejs20.x"
-    }
-  },
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "packages/server-vercel/dist/index.js"
-    }
-  ]
+  "outputDirectory": "packages/server-vercel/dist"
 }
