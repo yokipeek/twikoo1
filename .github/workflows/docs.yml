@@ -1,5 +1,4 @@
-# This workflow will run tests using node and then publish a package to GitHub Packages when a release is created
-# For more information see: https://help.github.com/actions/language-and-framework-guides/publishing-nodejs-packages
+# 文档站部署（VitePress → GitHub Pages）
 
 name: Docs
 
@@ -8,22 +7,60 @@ on:
     branches:
       - main
     paths:
-      - 'docs/**'
+      - "docs/**"
+      - ".github/workflows/docs.yml"
+  release:
+    types: [published]
   workflow_dispatch:
 
 jobs:
   publish-docs:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v2
-        # VuePress 需要完整提交历史来生成贡献者信息
+      - uses: actions/checkout@v6
+        # VitePress 需要完整提交历史来生成贡献者信息与最后更新时间
         with:
           fetch-depth: 0
-      - uses: imaegoo/vuepress-deploy@master
+      # 文档站内嵌的 twikoo 版本（两处，同一个变量驱动）：
+      #   ① `theme/Twikoo.vue` 的 CDN 地址（`import.meta.env.VITE_TWIKOO_VERSION`）
+      #   ② markdown 示例里的占位符 `__TWIKOO_VERSION__`（代码块不做 Vue 插值，
+      #      由 `.vitepress/config.ts` 的 markdown-it 规则在构建时替换）
+      #   - release 触发 → 用发布 tag（本仓库 tag 即 twikoo 版本号）
+      #   - push docs / 手动触发 → 取 registry 最新稳定版（`npm view` 读的是 latest dist-tag）
+      # 必须注入为 `VITE_TWIKOO_VERSION`：Vite 只把 VITE_ 前缀的**进程环境变量**暴露给
+      # `import.meta.env`，因此在构建之前先写进 $GITHUB_ENV。
+      - name: 解析文档站内嵌的 twikoo 版本
         env:
-          ACCESS_TOKEN: ${{ secrets.TWIKOO_TOKEN }}
-          TARGET_REPO: twikoojs/twikoo
-          TARGET_BRANCH: gh-pages
-          BUILD_SCRIPT: cd docs && yarn && yarn docs:build
-          BUILD_DIR: .vitepress/dist
-          CNAME: twikoo.js.org
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          version="${RELEASE_TAG}"
+          if [ -z "${version}" ]; then
+            version="$(npm view twikoo version)"
+          fi
+          echo "文档站将内嵌 twikoo@${version}"
+          echo "VITE_TWIKOO_VERSION=${version}" >> "$GITHUB_ENV"
+      - name: Setup pnpm (version from package.json packageManager field)
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Docs site build
+        run: pnpm --filter twikoo-docs docs:build
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4.1.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: docs/.vitepress/dist
+          cname: twikoo.js.org

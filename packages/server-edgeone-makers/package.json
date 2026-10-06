@@ -1,0 +1,46 @@
+{
+  "name": "@twikoojs/edgeone-makers",
+  "version": "0.0.0",
+  "description": "Twikoo comment system backend for Tencent EdgeOne Makers",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/twikoojs/twikoo.git"
+  },
+  "type": "module",
+  "main": "./dist/cloud-functions/index.js",
+  "module": "./dist/cloud-functions/index.js",
+  "exports": {
+    ".": {
+      "default": "./dist/cloud-functions/index.js"
+    }
+  },
+  "files": [
+    "dist/cloud-functions/index.js"
+  ],
+  "scripts": {
+    "build": "node scripts/build-ip2region-data.mjs && tsdown && node scripts/build-zip.mjs",
+    "build:zip": "node scripts/build-zip.mjs",
+    "check:bundle": "node scripts/check-eo-bundle.mjs",
+    "check:ip2region": "node scripts/build-ip2region-data.mjs --check",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@cap.js/server": "^4.0.5",
+    "@edgeone/pages-blob": "latest",
+    "@twikoojs/common": "workspace:*",
+    "@twikoojs/shared": "workspace:*",
+    "bowser": "^2.14.1",
+    "form-data": "^4.0.6",
+    "html-to-text": "^10.0.1",
+    "marked": "^18.0.13",
+    "pako": "^3.0.2",
+    "pushoo": "workspace:^",
+    "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "@imaegoo/node-ip2region": "^2.1.1",
+    "@types/node": "^26.6.1"
+  }
+}

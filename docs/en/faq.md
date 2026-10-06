@@ -12,15 +12,15 @@ Visitors can also comment by entering their digital QQ email address and using t
 
 ## How to get the private key file of the admin panel?
 
-1. [环境-登录授权](https://console.cloud.tencent.com/tcb/env/login)Click "Private Key Download" on the right of "Custom Login" to download the private key file
+1. [环境 - 登录授权](https://console.cloud.tencent.com/tcb/env/login)Click "Private Key Download" on the right of "Custom Login" to download the private key file
 2. Open the private key file with a text editor and copy all the contents
 3. Click the "pinion" (settings) icon in the comment window, paste the contents of the private key file, and set the administrator password
 
 ## How to turn on article visit statistics?
 
-You can add where you need to show the number of article visits：
+You can add where you need to show the number of article visits:
 
-``` html
+```html
 <span id="twikoo_visitors">0</span>
 ```
 
@@ -36,8 +36,8 @@ Note that due to the slow response time of the Akismet service (about 6 seconds)
 
 [环境总览](https://console.cloud.tencent.com/tcb/env/overview)See resource usage. twikoo consumes **database** and **cloud functions**, both with a free usage of -
 
-* Database: 50,000 reads/day, 50,000 writes/day
-* Cloud functions: 40,000 GBs/month
+- Database: 50,000 reads/day, 50,000 writes/day
+- Cloud functions: 40,000 GBs/month
 
 The memory consumption of Twikoo cloud functions is constant at 0.1GB, which means that Twikoo cloud functions have a running time of up to 400,000 seconds per month, and the bottleneck of free resources is mainly in the daily read limit of the database. It is recommended that webmasters pay attention to the usage of free resources.
 
@@ -47,11 +47,26 @@ Twikoo supports Katex formulas, but to limit the package size of Twikoo, Twikoo 
 
 example
 
-``` html
+```html
 <head>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.js" integrity="sha384-g7c+Jr9ZivxKLnZTDUhnkOnsh30B4H0rpLUpJ4jAIKs4fnJI+sEnkvrMWph2EDg4" crossorigin="anonymous"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/contrib/auto-render.min.js" integrity="sha384-mll67QQFJfxn0IYznZYonOWZ644AWYC+Pt2cHqMaRhXVrursRwvLnLaebdGIlYNa" crossorigin="anonymous"></script>
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css"
+    integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X"
+    crossorigin="anonymous"
+  />
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.js"
+    integrity="sha384-g7c+Jr9ZivxKLnZTDUhnkOnsh30B4H0rpLUpJ4jAIKs4fnJI+sEnkvrMWph2EDg4"
+    crossorigin="anonymous"
+  ></script>
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/contrib/auto-render.min.js"
+    integrity="sha384-mll67QQFJfxn0IYznZYonOWZ644AWYC+Pt2cHqMaRhXVrursRwvLnLaebdGIlYNa"
+    crossorigin="anonymous"
+  ></script>
 </head>
 ```
 
@@ -61,19 +76,19 @@ After loading, you can send `$$c = \pm\sqrt{a^2 + b^2}$$` to test the effect.
 
 You can also pass in a custom katex configuration during `twikoo.init`, see [Katex Auto-render Extension](https://katex.org/docs/autorender.html) for details.
 
-``` js
+```js
 twikoo.init({
-  envId: 'Environment id',
-  el: '#tcomment',
+  envId: "Environment id",
+  el: "#tcomment",
   katex: {
     delimiters: [
-      { left: '$$', right: '$$', display: true },
-      { left: '$', right: '$', display: false },
-      { left: '\\(', right: '\\)', display: false },
-      { left: '\\[', right: '\\]', display: true }
+      { left: "$$", right: "$$", display: true },
+      { left: "$", right: "$", display: false },
+      { left: "\\(", right: "\\)", display: false },
+      { left: "\\[", right: "\\]", display: true },
     ],
-    throwOnError: false
-  }
+    throwOnError: false,
+  },
 });
 ```
 
@@ -103,6 +118,46 @@ Akismet (Automattic Kismet) is a widely used spam filtering system by Matt Mulle
 1. Register [akismet.com](https://akismet.com)
 2. Select Akismet Personal subscription, copy the Akismet API Key and configure it in the Twikoo admin panel "Anti-Spam" module
 
+### Configure Jev Anti-Spam Service
+
+[Jev / System One](https://api.typesafe.ai/docs) is a structured decision model provided by TypeSafe. Unlike an LLM that generates text, Jev returns a predefined yes/no decision with a probability. Twikoo sends the comment text, nickname, and website together as structured state and uses the returned spam probability to classify the comment.
+
+After obtaining an API key from TypeSafe, configure the following fields in the Twikoo admin panel under Anti-Spam:
+
+- `JEV_API_KEY`: Jev API key.
+- `JEV_API_ENDPOINT`: API endpoint URL, default `https://api.typesafe.ai/v1/systemone`.
+- `JEV_MODEL`: Model name, default `jev-latest`.
+- `JEV_SPAM_THRESHOLD`: Spam probability threshold from 0 to 1, default `0.85`.
+
+Example:
+
+```text
+JEV_API_ENDPOINT=https://api.typesafe.ai/v1/systemone
+JEV_MODEL=jev-latest
+JEV_SPAM_THRESHOLD=0.85
+```
+
+Jev evaluates the comment text, nickname, and website together. For example, a harmless-looking comment may still be classified as spam when the nickname or website is clearly being used for SEO, commercial promotion, or link spam. Genuine personal blogs, developer websites, and project pages are not treated as spam merely because a URL is present.
+
+Anti-spam services are selected in this order:
+
+```text
+Tencent Cloud TMS → Akismet → Jev → LLM
+```
+
+Only the first configured service is used. If Tencent Cloud TMS or Akismet is configured, Jev will not be called. If Jev is configured, the LLM spam detector will not be called.
+
+### Configure LLM Anti-Spam Service
+
+Use [OpenAI SDK](https://www.npmjs.com/package/openai) compatible API services (such as DeepSeek, OpenAI, etc.) to implement more intelligent spam comment detection. Administrators can customize the prompt to flexibly define what constitutes "spam comments."
+
+- `LLM_API_KEY`: Enter your API key.
+- `LLM_API_ENDPOINT`: Enter the API endpoint URL (default `https://api.deepseek.com/v1`).
+- `LLM_MODEL`: Enter the model name (default `deepseek-v4-pro`).
+- `LLM_MAX_RETRIES`: Maximum retries for LLM detection (default 3).
+
+**(Optional)** Configure `LLM_SPAM_PROMPT`: Customize the prompt.
+
 ## Error encountered in login administration panel AUTH_INVALID_CUSTOM_LOGIN_TICKET
 
 Generally, after configuring the login private key, the login private key is downloaded again, which causes the previously configured login private key to be invalid.<br>
@@ -121,12 +176,13 @@ The Tencent Cloud environment comes with cloud storage, so you can upload images
 | Bed | Address | Features |
 | ---- | ---- | ---- |
 | qcloud | None | Tencent Cloud environment comes with it, can be viewed in Cloud Development - Cloud Storage |
-| 7bu | https://7bu.top | Go to No Bed, powered by 杜老师, no free packages |
+| 7bu | https://7bu.top | Go to No Bed, powered by 杜老师，no free packages |
 | see | https://s.ee | S.EE image bed, there is a free package, please register your account, `IMAGE_CDN_TOKEN` can be obtained in [Dashboard](https://s.ee/user/developers/) |
 | [lsky-pro](https://www.lsky.pro) | Private Deployment | LankenGraphics 2.0 version, `IMAGE_CDN` please configure the URL address of the home page of the graph bed (such as `https://7bu.top`), `IMAGE_CDN_TOKEN` get way please refer to the tutorial [杜老师 said the graph bed: new version Go not to the bed Token acquisition and emptying](https://dusays.com/454/), the format of the obtained token should be `1\|1bJbwlqBfnggmOMEZqXT5XusaIwqiZjCDs7r1Ob5`) |
 | [PicList](https://piclist.cn/) | Self-hosted | Set `IMAGE_CDN_URL` to the service URL. For `IMAGE_CDN_TOKEN`, see [PicList docs: API Authentication](https://piclist.cn/advanced.html#%E6%8E%A5%E5%8F%A3%E9%89%B4%E6%9D%83) |
 | [EasyImage2.0](https://github.com/icret/EasyImages2.0) | Self-hosted | Set `IMAGE_CDN_URL` to the API URL and `IMAGE_CDN_TOKEN` to your token |
 | [Chevereto](https://chevereto.com) | Self-hosted | Set `IMAGE_CDN_URL` to your Chevereto site (e.g. `https://your-chevereto.com`) and `IMAGE_CDN_TOKEN` to your API Key (found in Dashboard → Settings → API). Requires a paid Chevereto license or a fork that supports API v1 |
+| S3 / R2 / MinIO | S3-compatible service | Set `IMAGE_CDN` to `s3`, then configure `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, and related options; configure `S3_FORCE_PATH_STYLE` according to endpoint type: keep it empty or `true` for Cloudflare R2, MinIO, and other path-style endpoints, and set it to `false` for bucket-bound custom domains, such as Tencent Cloud COS custom domains |
 
 ## Can self-hosted deployments connect to an external database?
 

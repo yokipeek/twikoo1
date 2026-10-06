@@ -1,0 +1,175 @@
+/**
+ * twikoo-edgeone-makers 适配器测试。
+ *
+ * 注入内存 BlobKV store 跑契约核心事件；验证受限能力形态（DOMPurify 直通、
+ * 内嵌 Cap 未启用语义）、EO 体积门禁脚本。
+ */
+import { describe, expect, it } from "vitest";
+import { existsSync } from "node:fs";
+import { getNodemailer, resetCustomLibs } from "@twikoojs/common";
+import { createEoMakersFunc, eoCapabilities, fromTkResponse, prepareEoRuntime } from "../src/main";
+import type { EoEventLike } from "../src/main";
+import type { TkResponse } from "@twikoojs/common";
+
+/** 内存 Blob KV store（JSON 往返模拟持久化） */
+function makeStore(): {
+  store: Parameters<typeof createEoMakersFunc>[0] extends { store?: infer S } ? S : never;
+} {
+  const map = new Map<string, string>();
+  return {
+    store: {
+      /**
+       *
+       */
+      async get(key: string): Promise<unknown> {
+        return map.has(key) ? JSON.parse(map.get(key) as string) : null;
+      },
+      /**
+       *
+       */
+      async setJSON(key: string, value: unknown): Promise<void> {
+        map.set(key, JSON.stringify(value));
+      },
+      /**
+       *
+       */
+      async delete(key: string): Promise<void> {
+        map.delete(key);
+      },
+    } as never,
+  };
+}
+
+/** EO 事件构造 */
+function makeEvent(overrides: Partial<EoEventLike> = {}): EoEventLike {
+  return {
+    method: "POST",
+    headers: {},
+    body: { event: "GET_FUNC_VERSION" },
+    ...overrides,
+  };
+}
+
+describe("twikoo-edgeone-makers 薄适配器", () => {
+  it("happy：内存 BlobKV → GET_FUNC_VERSION code 0", async () => {
+    const { store } = makeStore();
+    const fn = createEoMakersFunc({ store });
+    const result = await fn(makeEvent());
+    expect(result.status).toBe(200);
+    const parsed = JSON.parse(result.body) as { code: number };
+    expect(parsed.code).toBe(0);
+  });
+
+  it("OPTIONS 预检：204 + CORS 头 + 无体（#1174 同类回归）", async () => {
+    const { store } = makeStore();
+    const fn = createEoMakersFunc({ store });
+    const result = await fn(
+      makeEvent({
+        method: "OPTIONS",
+        headers: { origin: "http://localhost:9820", "access-control-request-method": "POST" },
+        body: {},
+      }),
+    );
+    expect(result.status).toBe(204);
+    expect(result.headers["Access-Control-Allow-Origin"]).toBe("http://localhost:9820");
+    expect(result.headers["Access-Control-Max-Age"]).toBe("600");
+    expect(result.body).toBe("");
+  });
+
+  it("状态码透传：429 不被压成 200（2.0 限流改进依赖它）", () => {
+    const tkRes: TkResponse = {
+      status: 429,
+      headers: { "Access-Control-Allow-Origin": "*" },
+      body: { code: 1000, message: "请求过于频繁" },
+    };
+    const result = fromTkResponse(tkRes);
+    expect(result.status).toBe(429);
+    expect(result.headers["Access-Control-Allow-Origin"]).toBe("*");
+    expect(result.headers["Content-Type"]).toBe("application/json");
+    expect(result.body).toContain("请求过于频繁");
+  });
+
+  it("受限能力：mail restricted / domPurify false / akismet false / tencentTms false", () => {    expect(eoCapabilities.mail).toBe("restricted");
+    expect(eoCapabilities.domPurify).toBe(false);
+    expect(eoCapabilities.akismet).toBe(false);
+    expect(eoCapabilities.tencentTms).toBe(false);
+    expect(eoCapabilities.ip2region).toBe(true);
+  });
+
+  it("mail: restricted 名副其实：prepareEoRuntime 注入 HTTP 垫片后 mail 可用", async () => {
+    // 能力门只认 `=== true`，"restricted" 会被判为不支持；EO 靠 setCustomLibs 覆写
+    // 绕开能力门。这条同时锁定「垫片确实被注入」——否则邮件会静默失效。
+    resetCustomLibs();
+    await prepareEoRuntime(makeStore().store);
+    const nodemailer = await getNodemailer(eoCapabilities);
+    expect(typeof nodemailer.createTransport).toBe("function");
+    // SendGrid 形态可用
+    await expect(
+      nodemailer.createTransport({ service: "SendGrid", auth: { user: "u", pass: "p" } }).verify?.(),
+    ).resolves.toBe(true);
+    resetCustomLibs();
+  });
+
+  it("未注入垫片时 mail: restricted 会被能力门挡掉（对照：说明覆写不可缺）", async () => {
+    resetCustomLibs();
+    await expect(getNodemailer(eoCapabilities)).rejects.toThrow(/未声明 mail 能力/);
+    resetCustomLibs();
+  });
+
+  it("happy：直通 DOMPurify 下 COMMENT_SUBMIT 原样入库（BlobKV 持久化语义）", async () => {
+    const { store } = makeStore();
+    const fn = createEoMakersFunc({ store });
+    const result = await fn(
+      makeEvent({
+        body: {
+          event: "COMMENT_SUBMIT",
+          nick: "eo用户",
+          url: "/eo/1",
+          ua: "UA",
+          comment: "<p>评论<b>加粗</b></p>",
+        },
+      }),
+    );
+    expect(result.status).toBe(200);
+    // 再次读取（store 持久化语义）：评论可见
+    const get = await fn(makeEvent({ body: { event: "COMMENT_GET", url: "/eo/1" } }));
+    const data = JSON.parse(get.body) as { data: Array<{ nick: string; comment: string }> };
+    expect(data.data[0].nick).toBe("eo用户");
+    expect(data.data[0].comment).toContain("加粗");
+  });
+
+  it("产物门禁脚本：依赖清单无 nodemailer/jsdom（语义）", async () => {
+    const { execFileSync } = await import("node:child_process");
+    // 正向：脚本对当前 package.json 绿
+    const out = execFileSync(process.execPath, ["scripts/check-eo-bundle.mjs"], {
+      cwd: new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1"),
+      encoding: "utf8",
+    });
+    // dist 已构建时（CI 里 pnpm build 是 test 的前置），必须真的断言到「产物自包含 + 体积」——
+    // 否则这两条判据被静默跳过时，本用例仍会绿
+    if (existsSync(new URL("../dist", import.meta.url))) {
+      expect(out).toContain("产物自包含");
+      expect(out).toContain("体积在预期区间");
+    }
+    // 反向：临时注入 nodemailer 依赖 → 红
+    const { readFileSync: rf, writeFileSync: wf } = await import("node:fs");
+    const pkgPath = new URL("../package.json", import.meta.url).pathname.replace(
+      /^\/([A-Z]:)/,
+      "$1",
+    );
+    const original = rf(pkgPath, "utf8");
+    const pkg = JSON.parse(original);
+    pkg.dependencies.nodemailer = "^9.0.0";
+    wf(pkgPath, JSON.stringify(pkg, null, 2));
+    let failed = false;
+    try {
+      execFileSync(process.execPath, ["scripts/check-eo-bundle.mjs"], {
+        cwd: new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1"),
+      });
+    } catch {
+      failed = true;
+    }
+    wf(pkgPath, original);
+    expect(failed).toBe(true);
+  });
+});
