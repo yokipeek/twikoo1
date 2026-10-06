@@ -3,5 +3,17 @@
   "outputDirectory": "packages/server-vercel/dist",
   "framework": null,
   "installCommand": "pnpm install --frozen-lockfile",
-  "devCommand": "pnpm --filter=twikoo-vercel run dev"
+  "devCommand": "pnpm --filter=twikoo-vercel run dev",
+  "functions": {
+    "packages/server-vercel/dist/index.js": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 30
+    }
+  },
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "packages/server-vercel/dist/index.js"
+    }
+  ]
 }
