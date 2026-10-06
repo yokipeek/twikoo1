@@ -299,8 +299,12 @@ async function uploadImageToLskyPro(ctx: {
   const data = uploadResult.data as {
     status?: boolean;
     message?: string;
-    data?: { links?: { url?: string } };
-  };
+    data?: { links?: { url?: string }
+  }
+}
+
+/** 防止 tree-shaking：显式引用 cfimgbed 上传函数 */
+export const __cfimgbed_upload_ref = uploadImageToCfImgBed;
   if (data.status) {
     const payload = (data.data ?? {}) as Record<string, unknown>;
     payload.url = data.data?.links?.url;
