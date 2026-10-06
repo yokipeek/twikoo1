@@ -4,10 +4,16 @@
   "framework": null,
   "installCommand": "pnpm install --frozen-lockfile",
   "devCommand": "pnpm --filter=twikoo-vercel run dev",
-  "rewrites": [
+  "functions": {
+    "api/index.js": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 30
+    }
+  },
+  "routes": [
     {
-      "source": "/(.*)",
-      "destination": "/api/index"
+      "src": "/(.*)",
+      "dest": "/api/index"
     }
   ]
 }
