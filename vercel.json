@@ -1,6 +1,13 @@
 {
   "buildCommand": "pnpm install --frozen-lockfile && pnpm --filter=twikoo-vercel run build",
+  "outputDirectory": "packages/server-vercel/dist",
+  "framework": null,
   "installCommand": "pnpm install --frozen-lockfile",
   "devCommand": "pnpm --filter=twikoo-vercel run dev",
-  "outputDirectory": "packages/server-vercel/dist"
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/index"
+    }
+  ]
 }

@@ -1,3 +1,7 @@
-const { createVercelFunc } = require('@twikoojs/vercel')
+const path = require('path')
 
-module.exports = createVercelFunc()
+// Load the built twikoo-vercel from local monorepo
+const vercel = require(path.join(__dirname, '../packages/server-vercel/dist/index.js'))
+
+module.exports = vercel.default ?? vercel
+module.exports.default = module.exports
