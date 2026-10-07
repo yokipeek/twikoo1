@@ -15,6 +15,7 @@
     "demo:server": "cross-env TWIKOO_DATA=../../data TWIKOO_SEED=1 pnpm --filter tkserver start",
     "demo:page": "pnpm --filter @twikoojs/demo dev",
     "build": "pnpm -r --if-present run build",
+    "deploy:netlify": "netlify deploy --filter twikoo-netlify --config netlify.toml",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint .",

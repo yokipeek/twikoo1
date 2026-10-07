@@ -11,6 +11,21 @@ Twikoo 2.0 服务端适配器。业务逻辑在 `@twikoojs/common`，本包仅�
 运行时要求 Node.js **>= 22.12.0**，建议使用 **Node 24**（`@netlify/functions@6` 与
 `@netlify/aws-lambda-compat@2` 的最低版本要求）。
 
+### 从仓库根目录使用 Netlify CLI
+
+安装 Netlify CLI 并关联站点后，使用以下命令部署预览：
+
+```sh
+pnpm deploy:netlify
+```
+
+需要正式部署时，使用 `pnpm deploy:netlify --prod`。此脚本显式选择 `twikoo-netlify`
+工作区，并使用根目录的 `netlify.toml`，避免非交互部署因检测到多个项目而退出。
+
+如果外部部署工具直接调用 `netlify deploy`，必须给该命令添加
+`--filter twikoo-netlify --config netlify.toml`，并从仓库根目录运行。
+仅修改 `netlify.toml` 无法修复 CLI 在加载配置前发生的工作区选择错误。
+
 ## 不兼容升级说明
 
 新版 Netlify 部署模板改用 Modern Netlify Functions 入口，以便通过
@@ -49,3 +64,6 @@ Node.js 版本，旧部署不能只更新单个文件。
 ## 注意
 
 - 独立适配器：直接依赖 @twikoojs/common，**不依赖 twikoo-vercel**（用户决策）
+- 根目录 `netlify.toml` 使用 esbuild 和 `external_node_modules` 处理运行时依赖；外部化不代表从部署包中排除这些依赖。
+- 不要添加 `included_files = ["**/*"]`：这会将整个仓库及无关依赖一起放入函数部署包，导致超过 250 MB 大小限制。如需额外运行时文件，请仅指定必要的文件路径。
+- `twikoo` 必须保留同步 HTTP 响应；垃圾检测与通知由 `context.waitUntil()` 派发，不要通过后台函数配置尝试绕过部署包大小限制。
