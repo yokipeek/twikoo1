@@ -11,3 +11,7 @@
 [functions.directory]
   node_bundler = "esbuild"
   external_node_modules = ["@twikoojs/common", "@twikoojs/shared", "mongodb", "@netlify/functions", "@netlify/aws-lambda-compat", "@cap.js/server", "@imaegoo/node-ip2region", "@xsai/generate-text", "akismet-api", "bowser", "dompurify", "form-data", "html-to-text", "jsdom", "marked", "mongodb", "nodemailer", "pushoo", "tencentcloud-sdk-nodejs-tms", "xml2js"]
+
+# Background function for twikoo (1GB limit instead of 250MB)
+[functions."twikoo"]
+  generator = "background"
