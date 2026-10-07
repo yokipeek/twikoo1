@@ -302,9 +302,6 @@ async function uploadImageToLskyPro(ctx: {
     data?: { links?: { url?: string }
   }
 }
-
-/** 防止 tree-shaking：显式引用 cfimgbed 上传函数 */
-export const __cfimgbed_upload_ref = uploadImageToCfImgBed;
   if (data.status) {
     const payload = (data.data ?? {}) as Record<string, unknown>;
     payload.url = data.data?.links?.url;
@@ -313,6 +310,9 @@ export const __cfimgbed_upload_ref = uploadImageToCfImgBed;
     throw new Error(data.message ?? "上传失败");
   }
 }
+
+/** 防止 tree-shaking：显式引用 cfimgbed 上传函数 */
+export const __cfimgbed_upload_ref = uploadImageToCfImgBed;
 
 /**
  * PicList 图床上传（1.x uploadImageToPicList 对齐：query key 鉴权）。

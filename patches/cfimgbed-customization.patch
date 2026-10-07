@@ -1,0 +1,82 @@
+diff --git a/packages/client/src/components/TkAdminConfig.vue b/packages/client/src/components/TkAdminConfig.vue
+index 56e0f9f..b8ab1a7 100644
+--- a/packages/client/src/components/TkAdminConfig.vue
++++ b/packages/client/src/components/TkAdminConfig.vue
+@@ -300,6 +300,7 @@ function createSettings(): SettingGroup[] {
+             { value: "easyimage", label: "easyimage" },
+             { value: "chevereto", label: "chevereto" },
+             { value: "s3", label: "S3 / R2 / MinIO" },
++            { value: "cfimgbed", label: "cfimgbed" },
+           ],
+         },
+         {
+diff --git a/packages/client/src/i18n/constants.ts b/packages/client/src/i18n/constants.ts
+index 6cd0756..bca6c48 100644
+--- a/packages/client/src/i18n/constants.ts
++++ b/packages/client/src/i18n/constants.ts
+@@ -87,6 +87,7 @@ export const imageBedServices: readonly string[] = [
+   "easyimage",
+   "chevereto",
+   "S3 / R2 / MinIO",
++  "cfimgbed",
+ ];
+ 
+ /**
+@@ -94,7 +95,7 @@ export const imageBedServices: readonly string[] = [
+  *
+  * TkAdminConfig 用它决定 `IMAGE_CDN_URL` 输入框的显示条件（1.x 内联数组的等价物）。
+  */
+-export const customImageBedServices: readonly string[] = ["lskypro", "piclist", "easyimage", "s3"];
++export const customImageBedServices: readonly string[] = ["lskypro", "piclist", "easyimage", "s3", "cfimgbed"];
+ 
+ /** 默认头像占位图（`DEFAULT_GRAVATAR` 取值；留空等价于 `initials`） */
+ export const defaultGravatar: readonly string[] = [
+diff --git a/packages/client/test/client-units.test.ts b/packages/client/test/client-units.test.ts
+index 8d0d20b..dfd18ba 100644
+--- a/packages/client/test/client-units.test.ts
++++ b/packages/client/test/client-units.test.ts
+@@ -45,7 +45,7 @@ describe("constants", () => {
+     expect(highlightThemes).toContain("tomorrow");
+     expect(highlightPlugins).toEqual(["showLanguage", "copyButton"]);
+     expect(imageBedServices).toContain("qcloud");
+-    expect(customImageBedServices).toEqual(["lskypro", "piclist", "easyimage", "s3"]);
++    expect(customImageBedServices).toEqual(["lskypro", "piclist", "easyimage", "s3", "cfimgbed"]);
+     expect(defaultGravatar).toContain("mp");
+     expect(DEFAULT_GRAVATAR_CDN).toBe("weavatar.com");
+   });
+diff --git a/packages/server-common/src/services/upload.ts b/packages/server-common/src/services/upload.ts
+index 0fcfb1c..d2fb833 100644
+--- a/packages/server-common/src/services/upload.ts
++++ b/packages/server-common/src/services/upload.ts
+@@ -302,9 +302,6 @@ async function uploadImageToLskyPro(ctx: {
+     data?: { links?: { url?: string }
+   }
+ }
+-
+-/** 防止 tree-shaking：显式引用 cfimgbed 上传函数 */
+-export const __cfimgbed_upload_ref = uploadImageToCfImgBed;
+   if (data.status) {
+     const payload = (data.data ?? {}) as Record<string, unknown>;
+     payload.url = data.data?.links?.url;
+@@ -314,6 +311,9 @@ export const __cfimgbed_upload_ref = uploadImageToCfImgBed;
+   }
+ }
+ 
++/** 防止 tree-shaking：显式引用 cfimgbed 上传函数 */
++export const __cfimgbed_upload_ref = uploadImageToCfImgBed;
++
+ /**
+  * PicList 图床上传（1.x uploadImageToPicList 对齐：query key 鉴权）。
+  */
+diff --git a/packages/shared/package.json b/packages/shared/package.json
+index 66e902b..ab2b548 100644
+--- a/packages/shared/package.json
++++ b/packages/shared/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@twikoojs/shared",
+-  "version": "0.0.0",
++  "version": "2.0.12",
+   "description": "Twikoo 2.0 共享常量与类型（版本占位符、推送渠道、后端事件）",
+   "license": "MIT",
+   "repository": {

@@ -300,6 +300,7 @@ function createSettings(): SettingGroup[] {
             { value: "easyimage", label: "easyimage" },
             { value: "chevereto", label: "chevereto" },
             { value: "s3", label: "S3 / R2 / MinIO" },
+            { value: "cfimgbed", label: "cfimgbed" },
           ],
         },
         {

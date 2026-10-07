@@ -87,6 +87,7 @@ export const imageBedServices: readonly string[] = [
   "easyimage",
   "chevereto",
   "S3 / R2 / MinIO",
+  "cfimgbed",
 ];
 
 /**
@@ -94,7 +95,7 @@ export const imageBedServices: readonly string[] = [
  *
  * TkAdminConfig 用它决定 `IMAGE_CDN_URL` 输入框的显示条件（1.x 内联数组的等价物）。
  */
-export const customImageBedServices: readonly string[] = ["lskypro", "piclist", "easyimage", "s3"];
+export const customImageBedServices: readonly string[] = ["lskypro", "piclist", "easyimage", "s3", "cfimgbed"];
 
 /** 默认头像占位图（`DEFAULT_GRAVATAR` 取值；留空等价于 `initials`） */
 export const defaultGravatar: readonly string[] = [
